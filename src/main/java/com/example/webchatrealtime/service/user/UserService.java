@@ -1,6 +1,8 @@
 package com.example.webchatrealtime.service.user;
 
-import com.example.webchatrealtime.dto.RegisterDTO;
+import com.example.webchatrealtime.dto.response.BaseResponse;
+import com.example.webchatrealtime.dto.user.RegisterDTO;
+import com.example.webchatrealtime.dto.user.ResetPasswordDTO;
 
 public interface UserService {
     RegisterDTO registerNewUser(RegisterDTO registerDTO);
@@ -9,7 +11,9 @@ public interface UserService {
 
     boolean checkEmailExisted(String email);
 
-    String sendOtpToVerifyEmail(RegisterDTO registerDTO);
+    String sendOtpToVerifyEmail(String email);
 
-    RegisterDTO verifyEmail(RegisterDTO registerDTO, String otp);
+    RegisterDTO verifyEmailToRegisterUser(RegisterDTO registerDTO, String otp);
+
+    void resetPassword(String email, ResetPasswordDTO resetPasswordDTO);
 }

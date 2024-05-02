@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class Validate {
-    public List<String> validate(BindingResult bindingResult) {
+    public List<String> validateInput(BindingResult bindingResult) {
         List<String> errors = bindingResult.getFieldErrors().stream().map(fieldError ->
                 fieldError.getField() + ":" + fieldError.getDefaultMessage()).collect(Collectors.toList());
         return errors;
