@@ -1,4 +1,4 @@
-package com.example.webchatrealtime.dto;
+package com.example.webchatrealtime.dto.user;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
