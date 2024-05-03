@@ -1,19 +1,28 @@
 package com.example.webchatrealtime.controller;
 
 import com.example.webchatrealtime.common.CommonString;
+import com.example.webchatrealtime.dto.response.LoginReponseDTO;
 import com.example.webchatrealtime.dto.user.ForgotPasswordDTO;
+import com.example.webchatrealtime.dto.user.LoginDTO;
 import com.example.webchatrealtime.dto.user.RegisterDTO;
 import com.example.webchatrealtime.dto.response.BaseResponse;
 import com.example.webchatrealtime.dto.user.ResetPasswordDTO;
 import com.example.webchatrealtime.exception.OtpMismatchException;
 import com.example.webchatrealtime.exception.PasswordMismatchException;
 import com.example.webchatrealtime.exception.UserNotFoundException;
+import com.example.webchatrealtime.security.CustomUserDetail;
+import com.example.webchatrealtime.security.JwtTokenProvider;
 import com.example.webchatrealtime.service.user.UserService;
 import com.example.webchatrealtime.utils.Validate;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,11 +34,15 @@ import java.util.List;
 public class AuthController {
     private Validate validate;
     private UserService userService;
+    private AuthenticationManager authenticationManager;
+    private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
-    public AuthController(Validate validate, UserService userService) {
+    public AuthController(Validate validate, UserService userService, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
         this.validate = validate;
         this.userService = userService;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping("/sign_up")
@@ -87,5 +100,20 @@ public class AuthController {
                 return new ResponseEntity<>(new BaseResponse<>("OTP không hợp lệ", HttpStatus.UNAUTHORIZED.value()), HttpStatus.UNAUTHORIZED);
             }
         }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<BaseResponse> login(@Valid @RequestBody LoginDTO loginDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errors = validate.validateInput(bindingResult);
+            return new ResponseEntity<>(new BaseResponse("Thông tin đăng nhập không hợp lệ", HttpStatus.BAD_REQUEST.value(), errors), HttpStatus.BAD_REQUEST);
+        }
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        CustomUserDetail customUserDetail = (CustomUserDetail) authentication.getPrincipal();
+        String token = jwtTokenProvider.generateToken(customUserDetail);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(customUserDetail);
+        LoginReponseDTO loginReponseDTO = new LoginReponseDTO(jwtTokenProvider.getUserNameFromJwt(token), token, refreshToken);
+        return new ResponseEntity<>(new BaseResponse<>("Đăng nhập thành công", HttpStatus.OK.value(), loginReponseDTO), HttpStatus.OK);
     }
 }
